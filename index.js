@@ -2,10 +2,14 @@ const express = require("express");
 const server = express();
 const mongoose = require("mongoose");
 const productsRouter = require("./routes/Product");
+const brandsRouter = require("./routes/Brand");
+const categoriesRouter = require("./routes/Category");
 
 server.use(express.json());
 
 server.use("/products", productsRouter.router);
+server.use("/brands", brandsRouter.router);
+server.use("/category", categoriesRouter.router);
 
 main().catch((err) => console.log("err==>>", err));
 
