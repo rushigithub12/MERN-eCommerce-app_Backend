@@ -1,9 +1,11 @@
 const express = require("express");
 const server = express();
 const mongoose = require("mongoose");
-const { createProduct } = require("./controller/Product");
+const productsRouter = require("./routes/Product");
 
-server.use(express.json()); //parse req body coming from frontend
+server.use(express.json());
+
+server.use("/products", productsRouter.router);
 
 main().catch((err) => console.log("err==>>", err));
 
@@ -13,10 +15,8 @@ async function main() {
 }
 
 server.get("/", (req, res) => {
-  res.json({ status: "sucsess" });
+  res.json({ status: "success" });
 });
-
-server.post("/products", createProduct)
 
 server.listen(8080, () => {
   console.log("server running");
