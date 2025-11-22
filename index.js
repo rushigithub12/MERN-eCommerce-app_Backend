@@ -6,12 +6,15 @@ const brandsRouter = require("./routes/Brand");
 const categoriesRouter = require("./routes/Category");
 const cors = require("cors");
 
-
-server.use(cors())
+server.use(
+  cors({
+    exposedHeaders: ["X-Total-Count"],
+  })
+);
 server.use(express.json());
 
 server.use((req, res, next) => {
-  res.set('Cache-Control', 'no-store');
+  res.set("Cache-Control", "no-store");
   next();
 });
 
