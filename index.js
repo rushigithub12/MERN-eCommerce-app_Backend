@@ -4,8 +4,16 @@ const mongoose = require("mongoose");
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
 const categoriesRouter = require("./routes/Category");
+const cors = require("cors");
 
+
+server.use(cors())
 server.use(express.json());
+
+server.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 server.use("/products", productsRouter.router);
 server.use("/brands", brandsRouter.router);
