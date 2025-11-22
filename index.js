@@ -4,6 +4,9 @@ const mongoose = require("mongoose");
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
 const categoriesRouter = require("./routes/Category");
+const userRouter = require("./routes/User");
+const authRouter = require("./routes/Auth");
+
 const cors = require("cors");
 
 server.use(
@@ -21,6 +24,8 @@ server.use((req, res, next) => {
 server.use("/products", productsRouter.router);
 server.use("/brands", brandsRouter.router);
 server.use("/category", categoriesRouter.router);
+server.use("/users", userRouter.router);
+server.use("/auth", authRouter.router);
 
 main().catch((err) => console.log("err==>>", err));
 
