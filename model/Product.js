@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const productSchema = new Schema({
-  id: { type: String, required: true, unique: true },
   title: { type: String, required: true, unique: true },
   description: { type: String, required: true },
   brand: { type: String, required: true },
@@ -30,17 +29,17 @@ const productSchema = new Schema({
   deleted: { type: Boolean, default: false },
 });
 
-// const virtual = productSchema.virtual("id"); //to replace _id with id as required for frontend side
+const virtualId = productSchema.virtual("id");
+virtualId.get(function () {
+  return this._id;
+});
 
-// virtual.get(function () {
-//   return this._id;
-// });
-// productSchema.set("toJSON", {
-//   virtuals: true,
-//   versionKey: false,
-//   transform: function (doc, ret) {
-//     delete ret._id;
-//   },
-// });
+productSchema.set("toJSON", {
+  virtuals: true,
+  versionKey: false,
+  transform: function (doc, ret) {
+    delete ret._id;
+  },
+});
 
 exports.Product = mongoose.model("Product", productSchema);

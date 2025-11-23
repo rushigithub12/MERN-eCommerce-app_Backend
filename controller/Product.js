@@ -53,17 +53,15 @@ exports.fetchAllproducts = async (req, res) => {
 
     res.set("X-Total-Count", totalDocs);
     res.status(200).json(response);
-
   } catch (err) {
     res.status(400).json(err);
   }
 };
 
-
 exports.fetchProductById = async (req, res) => {
   try {
     const { id } = await req.params;
-    const doc = await Product.findOne({ id: req.params.id });
+    const doc = await Product.findById(id);
     res.status(200).json(doc);
   } catch (err) {
     res.status(400).json(err);
