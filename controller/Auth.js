@@ -16,7 +16,15 @@ exports.loginUser = async (req, res) => {
     if (!user) {
       res.status(400).json({ message: "No Such User exists" });
     } else if (user.password === req.body.password) {
-      res.status(200).json({ id: user.id, email: user.email, name: user.name, addresses: user.addresses });
+      res
+        .status(200)
+        .json({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          addresses: user.addresses,
+          role: user.role,
+        });
     } else {
       res.status(401).json({ message: "Invalid Credentials" });
     }
