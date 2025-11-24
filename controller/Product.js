@@ -17,8 +17,8 @@ exports.fetchAllproducts = async (req, res) => {
 
     // Filters
     if (req.query.category) {
-      query = query.find({ category: req.query.category });
-      totalCountQuery = totalCountQuery.find({ category: req.query.category });
+      query = query.find({ category: { $in: req.query.category.split(",") } });
+      totalCountQuery = totalCountQuery.find({ category: {$in:req.query.category.split(',')} });
     }
     if (req.query.brand) {
       query = query.find({ brand: req.query.brand });
