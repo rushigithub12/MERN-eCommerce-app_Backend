@@ -12,13 +12,19 @@ exports.createProduct = async (req, res) => {
 
 exports.fetchAllproducts = async (req, res) => {
   try {
-    let query = Product.find({});
-    let totalCountQuery = Product.find({});
+    let condition = {};
+    if (!req.query.admin) {
+      condition.deleted = { $ne: true };
+    }
+    let query = Product.find(condition);
+    let totalCountQuery = Product.find(condition);
 
     // Filters
     if (req.query.category) {
       query = query.find({ category: { $in: req.query.category.split(",") } });
-      totalCountQuery = totalCountQuery.find({ category: {$in:req.query.category.split(',')} });
+      totalCountQuery = totalCountQuery.find({
+        category: { $in: req.query.category.split(",") },
+      });
     }
     if (req.query.brand) {
       query = query.find({ brand: req.query.brand });
