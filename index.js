@@ -1,7 +1,11 @@
 const express = require("express");
 const server = express();
 const mongoose = require("mongoose");
+const passport = require("passport");
+const session = require("express-session");
+const LocalStrategy = require("passport-local").Strategy;
 const swaggerDocs = require("./swagger");
+const crypto = require("crypto");
 
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
@@ -12,6 +16,62 @@ const cartRouter = require("./routes/Cart");
 const orderRouter = require("./routes/Order");
 
 const cors = require("cors");
+const { User } = require("./model/User");
+const { isAuth, sanitizeUser } = require("./services/common");
+
+server.use(
+  session({
+    secret: "keyboard cat",
+    resave: false, // don't save session if unmodified
+    saveUninitialized: false, // don't create session until something
+  })
+);
+server.use(passport.authenticate("session"));
+
+//local strategy
+passport.use(
+  new LocalStrategy(async function (username, password, done) {
+    try {
+      const user = await User.findOne({ email: username });
+      if (!user) {
+        done(null, false, { message: "Invalid Credentials" });
+      }
+      crypto.pbkdf2(
+        password,
+        user.salt,
+        310000,
+        32,
+        "sha256",
+        function (err, hashedPassword) {
+          if (err) {
+            return done(err);
+          }
+          if (!crypto.timingSafeEqual(user.password, hashedPassword)) {
+            return done(null, false, {
+              message: "Invalid Credentials",
+            });
+          }
+          return done(null, sanitizeUser(user));
+        }
+      );
+    } catch (err) {
+      done(err);
+    }
+  })
+);
+
+//Passport serializes and deserializes user information to and fro from the session.
+passport.serializeUser(function (user, cb) {
+  process.nextTick(function () {
+    return cb(null, sanitizeUser(user));
+  });
+});
+
+passport.deserializeUser(function (user, cb) {
+  process.nextTick(function () {
+    return cb(null, user);
+  });
+});
 
 server.use(
   cors({
@@ -25,13 +85,13 @@ server.use((req, res, next) => {
   next();
 });
 
-server.use("/products", productsRouter.router);
-server.use("/brands", brandsRouter.router);
-server.use("/category", categoriesRouter.router);
-server.use("/users", userRouter.router);
+server.use("/products", isAuth, productsRouter.router); //we can also JWT token
+server.use("/brands", isAuth, brandsRouter.router);
+server.use("/category", isAuth, categoriesRouter.router);
+server.use("/users", isAuth, userRouter.router);
 server.use("/auth", authRouter.router);
-server.use("/cart", cartRouter.router);
-server.use("/orders", orderRouter.router);
+server.use("/cart", isAuth, cartRouter.router);
+server.use("/orders", isAuth, orderRouter.router);
 
 main().catch((err) => console.log("err==>>", err));
 
