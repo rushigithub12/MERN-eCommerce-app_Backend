@@ -1,9 +1,7 @@
-exports.isAuth = (req, res, next) => {
-  if (req.user) {
-    next();
-  } else {
-    res.send(401);
-  }
+const passport = require("passport");
+
+exports.isAuth = () => {
+  return passport.authenticate("jwt");
 };
 
 exports.sanitizeUser = (user) => {

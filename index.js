@@ -6,6 +6,9 @@ const session = require("express-session");
 const LocalStrategy = require("passport-local").Strategy;
 const swaggerDocs = require("./swagger");
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
+const JwtStrategy = require("passport-jwt").Strategy;
+const ExtractJwt = require("passport-jwt").ExtractJwt;
 
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
@@ -19,6 +22,12 @@ const cors = require("cors");
 const { User } = require("./model/User");
 const { isAuth, sanitizeUser } = require("./services/common");
 
+const SECRET_KEY = "SECRETE_KEY";
+
+const opts = {};
+opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+opts.secretOrKey = SECRET_KEY;
+
 server.use(
   session({
     secret: "keyboard cat",
@@ -30,9 +39,14 @@ server.use(passport.authenticate("session"));
 
 //local strategy
 passport.use(
-  new LocalStrategy(async function (username, password, done) {
+  "local",
+  new LocalStrategy({ usernameField: "email" }, async function (
+    email,
+    password,
+    done
+  ) {
     try {
-      const user = await User.findOne({ email: username });
+      const user = await User.findOne({ email: email });
       if (!user) {
         done(null, false, { message: "Invalid Credentials" });
       }
@@ -42,7 +56,7 @@ passport.use(
         310000,
         32,
         "sha256",
-        function (err, hashedPassword) {
+        async function (err, hashedPassword) {
           if (err) {
             return done(err);
           }
@@ -51,11 +65,27 @@ passport.use(
               message: "Invalid Credentials",
             });
           }
-          return done(null, sanitizeUser(user));
+          const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
+          return done(null, token);
         }
       );
     } catch (err) {
       done(err);
+    }
+  })
+);
+
+//jwt strategy
+passport.use(
+  "jwt",
+  new JwtStrategy(opts, async function (jwt_payload, done) {
+    try {
+      const user = await User.findOne({ id: jwt_payload.sub });
+      if (user) {
+        return done(null, sanitizeUser(user));
+      }
+    } catch (err) {
+      return done(err, false);
     }
   })
 );
@@ -85,13 +115,13 @@ server.use((req, res, next) => {
   next();
 });
 
-server.use("/products", isAuth, productsRouter.router); //we can also JWT token
-server.use("/brands", isAuth, brandsRouter.router);
-server.use("/category", isAuth, categoriesRouter.router);
-server.use("/users", isAuth, userRouter.router);
+server.use("/products", isAuth(), productsRouter.router); //we can also JWT token
+server.use("/brands", isAuth(), brandsRouter.router);
+server.use("/category", isAuth(), categoriesRouter.router);
+server.use("/users", isAuth(), userRouter.router);
 server.use("/auth", authRouter.router);
-server.use("/cart", isAuth, cartRouter.router);
-server.use("/orders", isAuth, orderRouter.router);
+server.use("/cart", isAuth(), cartRouter.router);
+server.use("/orders", isAuth(), orderRouter.router);
 
 main().catch((err) => console.log("err==>>", err));
 
