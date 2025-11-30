@@ -1,8 +1,9 @@
 const { User } = require("../model/User");
+const { sanitizeUser } = require("../services/common");
 
 exports.fetchUserById = async (req, res) => {
   try {
-    const { id } = await req.params;
+    const { id } = await req.user;
     const user = await User.findById(id).exec();
     res
       .status(200)

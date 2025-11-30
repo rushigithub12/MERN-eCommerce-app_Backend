@@ -8,7 +8,7 @@ const swaggerDocs = require("./swagger");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const JwtStrategy = require("passport-jwt").Strategy;
-const ExtractJwt = require("passport-jwt").ExtractJwt;
+const cookieParser = require("cookie-parser");
 
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
@@ -20,13 +20,16 @@ const orderRouter = require("./routes/Order");
 
 const cors = require("cors");
 const { User } = require("./model/User");
-const { isAuth, sanitizeUser } = require("./services/common");
+const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 
 const SECRET_KEY = "SECRETE_KEY";
 
 const opts = {};
-opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = SECRET_KEY;
+
+server.use(express.static("build"));
+server.use(cookieParser());
 
 server.use(
   session({
@@ -66,7 +69,7 @@ passport.use(
             });
           }
           const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
-          return done(null, token);
+           done(null, { id: user.id, role: user.role, token }); // this lines sends to serializer
         }
       );
     } catch (err) {
@@ -80,7 +83,7 @@ passport.use(
   "jwt",
   new JwtStrategy(opts, async function (jwt_payload, done) {
     try {
-      const user = await User.findOne({ id: jwt_payload.sub });
+      const user = await User.findById(jwt_payload.id);
       if (user) {
         return done(null, sanitizeUser(user));
       }
