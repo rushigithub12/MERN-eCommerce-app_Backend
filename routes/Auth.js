@@ -42,7 +42,7 @@
  *           schema:
  *             type: object
  *             properties:
- *               email: 
+ *               email:
  *                 type: string
  *               password:
  *                 type: string
@@ -53,7 +53,7 @@
 
 /**
  * @swagger
- * /auth/check:
+ * /auth/checkAuth:
  *   get:
  *     summary: Verify logged-in user
  *     tags: [Auth]
@@ -67,7 +67,7 @@
  */
 
 const express = require("express");
-const { createUser, loginUser, checkUser } = require("../controller/Auth");
+const { createUser, loginUser, checkAuthUser } = require("../controller/Auth");
 const passport = require("passport");
 
 const router = express.Router();
@@ -75,6 +75,6 @@ const router = express.Router();
 router
   .post("/signup", createUser)
   .post("/login", passport.authenticate("local"), loginUser)
-  .get("/check", passport.authenticate("jwt"), checkUser);
+  .get("/checkAuth", passport.authenticate("jwt"), checkAuthUser);
 
 exports.router = router;
