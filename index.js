@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const server = express();
 const mongoose = require("mongoose");
@@ -22,31 +23,21 @@ const cors = require("cors");
 const { User } = require("./model/User");
 const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 
-const SECRET_KEY = "SECRETE_KEY";
-
 const opts = {};
 opts.jwtFromRequest = cookieExtractor;
-opts.secretOrKey = SECRET_KEY;
+opts.secretOrKey = process.env.JWT_SECRET_KEY;
 
 // This is your test secret API key.
-const stripe = require("stripe")(
-  "sk_test_51SaJjnLFLV1W6TyFSvVKk9pYBVsvljAN55H6KNj31tntHcEa0Kb5qvcGlu2NVtaMFT3yBGPRWRMNJZbW1H9b2HKU00GlGgsZs4"
-);
-
-
-//WEBHOOK stripe CLI
-const endpointSecret =
-  "whsec_692a17c66ff3f5b8b07c147b8a66c949e8b90254867b43d9695884fd46cf4104";
+const stripe = require("stripe")(process.env.STRIPE_SECRET_API_KEY);
 
 server.post(
   "/webhook",
   express.raw({ type: "application/json" }),
   (request, response) => {
     let event = request.body;
-    console.log("event===>>", event)
     // Only verify the event if you have an endpoint secret defined.
     // Otherwise use the basic event deserialized with JSON.parse
-    if (endpointSecret) {
+    if (process.env.STRIPE_ENDPOINT_SECRET) {
       // Get the signature sent by Stripe
       const signature = request.headers["stripe-signature"];
       try {
@@ -91,7 +82,7 @@ server.use(cookieParser());
 
 server.use(
   session({
-    secret: "keyboard cat",
+    secret: process.env.SESSION_KEY,
     resave: false, // don't save session if unmodified
     saveUninitialized: false, // don't create session until something
   })
@@ -126,7 +117,10 @@ passport.use(
               message: "Invalid Credentials",
             });
           }
-          const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
+          const token = jwt.sign(
+            sanitizeUser(user),
+            process.env.JWT_SECRET_KEY
+          );
           done(null, { id: user.id, role: user.role, token }); // this lines sends to serializer
         }
       );
@@ -177,7 +171,6 @@ server.use((req, res, next) => {
 
 // server.use(express.raw({ type: "application/json" }))
 
-
 server.use("/products", isAuth(), productsRouter.router); //we can also JWT token
 server.use("/brands", isAuth(), brandsRouter.router);
 server.use("/category", isAuth(), categoriesRouter.router);
@@ -185,7 +178,6 @@ server.use("/users", isAuth(), userRouter.router);
 server.use("/auth", authRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), orderRouter.router);
-
 
 server.use(express.static("public"));
 
@@ -207,15 +199,12 @@ server.post("/create-payment-intent", async (req, res) => {
   });
 });
 
-
-
 server.use(express.json());
-
 
 main().catch((err) => console.log("err==>>", err));
 
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/test");
+  await mongoose.connect(process.env.MONGODB_URL);
   console.log("database connnected");
 }
 
@@ -223,7 +212,7 @@ server.get("/", (req, res) => {
   res.json({ status: "success" });
 });
 
-server.listen(8080, () => {
+server.listen(process.env.PORT, () => {
   console.log("server running");
   swaggerDocs(server);
 });
