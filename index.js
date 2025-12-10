@@ -28,6 +28,64 @@ const opts = {};
 opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = SECRET_KEY;
 
+// This is your test secret API key.
+const stripe = require("stripe")(
+  "sk_test_51SaJjnLFLV1W6TyFSvVKk9pYBVsvljAN55H6KNj31tntHcEa0Kb5qvcGlu2NVtaMFT3yBGPRWRMNJZbW1H9b2HKU00GlGgsZs4"
+);
+
+
+//WEBHOOK stripe CLI
+const endpointSecret =
+  "whsec_692a17c66ff3f5b8b07c147b8a66c949e8b90254867b43d9695884fd46cf4104";
+
+server.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  (request, response) => {
+    let event = request.body;
+    console.log("event===>>", event)
+    // Only verify the event if you have an endpoint secret defined.
+    // Otherwise use the basic event deserialized with JSON.parse
+    if (endpointSecret) {
+      // Get the signature sent by Stripe
+      const signature = request.headers["stripe-signature"];
+      try {
+        event = stripe.webhooks.constructEvent(
+          request.body,
+          signature,
+          endpointSecret
+        );
+      } catch (err) {
+        console.log(`⚠️  Webhook signature verification failed.`, err.message);
+        return response.sendStatus(400);
+      }
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        const paymentIntent = event.data.object;
+        console.log(
+          `PaymentIntent for ${paymentIntent.amount} was successful!`
+        );
+        // Then define and call a method to handle the successful payment intent.
+        // handlePaymentIntentSucceeded(paymentIntent);
+        break;
+      case "payment_method.attached":
+        const paymentMethod = event.data.object;
+        // Then define and call a method to handle the successful attachment of a PaymentMethod.
+        // handlePaymentMethodAttached(paymentMethod);
+        break;
+      default:
+        // Unexpected event type
+        console.log(`Unhandled event type ${event.type}.`);
+    }
+
+    // Return a 200 response to acknowledge receipt of the event
+    response.send();
+  }
+);
+
 server.use(express.static("build"));
 server.use(cookieParser());
 
@@ -111,12 +169,14 @@ server.use(
     exposedHeaders: ["X-Total-Count"],
   })
 );
-server.use(express.json());
 
 server.use((req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
 });
+
+// server.use(express.raw({ type: "application/json" }))
+
 
 server.use("/products", isAuth(), productsRouter.router); //we can also JWT token
 server.use("/brands", isAuth(), brandsRouter.router);
@@ -126,30 +186,15 @@ server.use("/auth", authRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), orderRouter.router);
 
-// This is your test secret API key.
-const stripe = require("stripe")(
-  "sk_test_51SaJjnLFLV1W6TyFSvVKk9pYBVsvljAN55H6KNj31tntHcEa0Kb5qvcGlu2NVtaMFT3yBGPRWRMNJZbW1H9b2HKU00GlGgsZs4"
-);
 
 server.use(express.static("public"));
 
-const calculateOrderAmount = (items) => {
-  // Calculate the order total on the server to prevent
-  // people from directly manipulating the amount on the client
-  // let total = 0;
-  // items.forEach((item) => {
-  //   total += item.amount;
-  // });
-  // return total;
-  return 1400;
-};
-
 server.post("/create-payment-intent", async (req, res) => {
-  const { items } = req.body;
+  const { totalAmount } = req.body;
 
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: calculateOrderAmount(items),
+    amount: totalAmount * 100,
     currency: "usd",
     // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
     automatic_payment_methods: {
@@ -161,6 +206,10 @@ server.post("/create-payment-intent", async (req, res) => {
     clientSecret: paymentIntent.client_secret,
   });
 });
+
+
+
+server.use(express.json());
 
 
 main().catch((err) => console.log("err==>>", err));
