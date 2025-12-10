@@ -44,7 +44,7 @@ server.post(
         event = stripe.webhooks.constructEvent(
           request.body,
           signature,
-          endpointSecret
+          process.env.STRIPE_ENDPOINT_SECRET
         );
       } catch (err) {
         console.log(`⚠️  Webhook signature verification failed.`, err.message);
@@ -79,6 +79,7 @@ server.post(
 
 server.use(express.static("build"));
 server.use(cookieParser());
+server.use(express.json());
 
 server.use(
   session({
@@ -169,8 +170,6 @@ server.use((req, res, next) => {
   next();
 });
 
-// server.use(express.raw({ type: "application/json" }))
-
 server.use("/products", isAuth(), productsRouter.router); //we can also JWT token
 server.use("/brands", isAuth(), brandsRouter.router);
 server.use("/category", isAuth(), categoriesRouter.router);
@@ -198,8 +197,6 @@ server.post("/create-payment-intent", async (req, res) => {
     clientSecret: paymentIntent.client_secret,
   });
 });
-
-server.use(express.json());
 
 main().catch((err) => console.log("err==>>", err));
 
