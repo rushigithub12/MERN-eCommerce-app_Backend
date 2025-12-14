@@ -10,6 +10,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const JwtStrategy = require("passport-jwt").Strategy;
 const cookieParser = require("cookie-parser");
+const path = require("path");
 
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
@@ -77,7 +78,7 @@ server.post(
   }
 );
 
-server.use(express.static("build"));
+server.use(express.static(path.resolve(__dirname, "build")));
 server.use(cookieParser());
 server.use(express.json());
 
